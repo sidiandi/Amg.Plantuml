@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30011.22
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Plantuml", "PlantumlPipe\Plantuml.csproj", "{60B3510F-5D37-4421-8A8C-41EE4D4D806E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amg.Plantuml", "Amg.Plantuml\Amg.Plantuml.csproj", "{60B3510F-5D37-4421-8A8C-41EE4D4D806E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Plantuml.Tests", "Plantuml.Tests\Plantuml.Tests.csproj", "{C1AF2AEC-FB72-4A4C-804B-053A05B6FAA3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amg.Plantuml.Tests", "Amg.Plantuml.Tests\Amg.Plantuml.Tests.csproj", "{C1AF2AEC-FB72-4A4C-804B-053A05B6FAA3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

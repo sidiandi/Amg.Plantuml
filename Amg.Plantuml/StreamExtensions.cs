@@ -2,7 +2,7 @@
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Plantuml
+namespace Amg.Plantuml
 {
     public static class StreamExtensions
     {

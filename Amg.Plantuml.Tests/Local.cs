@@ -9,11 +9,13 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Plantuml
+namespace Amg.Plantuml
 {
     [TestFixture]
-    public sealed class PlantumlTests
+    public sealed class LocalTests
     {
+        string TestDir = typeof(LocalTests).GetProgramDataDirectory();
+
         [Test]
         public async Task Test()
         {
@@ -31,11 +33,17 @@ Alice <-- Bob: another authentication Response
             var sw = Stopwatch.StartNew();
             using (var plantuml = Plantuml.Local(new LocalSettings
             {
+                Options = new[] { "-v" }
             }))
             {
                 for (int i = 0; i < count; ++i)
                 {
-                    await plantuml.Convert(plantumlMarkup, $@"Alice-{i}.png");
+                    var outputFile = TestDir.Combine($@"Alice-{i}.png");
+                    await plantuml.Convert(plantumlMarkup, outputFile);
+                    Assert.That(new FileInfo(outputFile).Length > 0);
+                    using (var image = System.Drawing.Image.FromFile(outputFile))
+                    {
+                    }
                 }
             }
             Console.WriteLine(sw.Elapsed);

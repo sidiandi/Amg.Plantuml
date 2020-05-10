@@ -6,15 +6,18 @@ using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Threading;
 
-namespace Plantuml
+namespace Amg.Plantuml
 {
     public class LocalSettings
     {
         public string? PlantUmlJarFile { get; set; }
         public string[] Options { get; set; } = new string[] { };
+        public string? GraphvizDotFile { get; set; }
     }
 
+    // https://plantuml.com/de/command-line
     public sealed class Local : IDisposable, IPlantuml
     {
         public Local(LocalSettings settings)
@@ -43,7 +46,12 @@ namespace Plantuml
             {
                 if (plantumlProcess is null)
                 {
-                    plantumlProcess = Process.Start(new ProcessStartInfo
+                    if (!PlantumlJarFile.IsFile())
+                    {
+                        throw new FileNotFoundException($"plantuml.jar not found at {PlantumlJarFile}.");
+                    }
+
+                    var startInfo = new ProcessStartInfo
                     {
                         FileName = "java.exe",
                         Arguments = new string[]
@@ -55,10 +63,12 @@ namespace Plantuml
                         .Concat(settings.Options).Join(" "),
                         RedirectStandardInput = true,
                         RedirectStandardOutput = true,
-                        UseShellExecute = false
-                    });
+                        UseShellExecute = false,
+                    };
 
-                    plantumlProcess.Start();
+                    startInfo.Environment["GRAPHVIZ_DOT"] = this.GraphvizDotFile;
+
+                    plantumlProcess = Process.Start(startInfo);
                 }
 
                 return plantumlProcess;
@@ -87,8 +97,23 @@ namespace Plantuml
                     return settings.PlantUmlJarFile;
                 }
 
-                return Assembly.GetExecutingAssembly().Location.Parent().Combine("plantuml.jar");
+                return ExtDir.Combine("plantuml.jar");
             }
         }
+
+        string GraphvizDotFile
+        {
+            get
+            {
+                if (settings.GraphvizDotFile is { })
+                {
+                    return settings.GraphvizDotFile;
+                }
+
+                return ExtDir.Combine(@"graphviz-2.38\release\bin\dot.exe");
+            }
+        }
+
+        string ExtDir => Assembly.GetExecutingAssembly().Location.Parent().Combine("plantuml");
     }
 }

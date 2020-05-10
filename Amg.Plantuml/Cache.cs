@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using YamlDotNet.Core;
 
-namespace Plantuml
+namespace Amg.Plantuml
 {
     public class Cache : IPlantuml
     {

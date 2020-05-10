@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Plantuml
+namespace Amg.Plantuml
 {
     public class StreamExtensionsTests
     {

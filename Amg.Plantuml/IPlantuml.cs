@@ -3,7 +3,7 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace Plantuml
+namespace Amg.Plantuml
 {
     public interface IPlantuml : IDisposable
     {
@@ -14,7 +14,7 @@ namespace Plantuml
     {
         public static async Task<string> Convert(this IPlantuml plantuml, string plantumlMarkup, string outputFile)
         {
-            using (var output = File.OpenWrite(outputFile.EnsureParentDirectoryExists()))
+            using (var output = File.Open(outputFile.EnsureParentDirectoryExists(), FileMode.Create))
             {
                 await plantuml.Convert(new StringReader(plantumlMarkup), output);
                 return outputFile;
