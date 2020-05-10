@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Threading;
+using System.Text.RegularExpressions;
 
 namespace Amg.Plantuml
 {
@@ -33,11 +34,29 @@ namespace Amg.Plantuml
             }
         }
 
+        readonly SemaphoreSlim convertInProgress = new SemaphoreSlim(1, 1);
+
         public async Task Convert(TextReader plantumlMarkup, Stream output)
         {
-            var captureOutput = PlantumlProcess.StandardOutput.BaseStream.CopyUntilAsync(pipedelimitor + "\r\n", output);
-            PlantumlProcess.StandardInput.Write(await plantumlMarkup.ReadToEndAsync());
-            await captureOutput;
+            await convertInProgress.WaitAsync();
+            try
+            {
+                var markup = await plantumlMarkup.ReadToEndAsync();
+
+                // ensure that end marker is present
+                if (!Regex.IsMatch(markup, @"@end"))
+                {
+                    markup = markup + "\r\n@end";
+                }
+
+                var captureOutput = PlantumlProcess.StandardOutput.BaseStream.CopyUntilAsync(pipedelimitor + "\r\n", output);
+                PlantumlProcess.StandardInput.WriteLine(markup);
+                await captureOutput;
+            }
+            finally
+            {
+                convertInProgress.Release();
+            }
         }
 
         Process PlantumlProcess
@@ -64,9 +83,13 @@ namespace Amg.Plantuml
                         RedirectStandardInput = true,
                         RedirectStandardOutput = true,
                         UseShellExecute = false,
+                        CreateNoWindow = true
                     };
 
-                    startInfo.Environment["GRAPHVIZ_DOT"] = this.GraphvizDotFile;
+                    if (this.GraphvizDotFile is { })
+                    {
+                        startInfo.Environment["GRAPHVIZ_DOT"] = this.GraphvizDotFile;
+                    }
 
                     plantumlProcess = Process.Start(startInfo);
                 }
@@ -84,6 +107,7 @@ namespace Amg.Plantuml
             if (plantumlProcess is { })
             {
                 plantumlProcess.StandardInput.Close();
+                plantumlProcess.StandardOutput.ReadToEnd();
                 plantumlProcess.WaitForExit();
             }
         }
@@ -97,11 +121,18 @@ namespace Amg.Plantuml
                     return settings.PlantUmlJarFile;
                 }
 
-                return ExtDir.Combine("plantuml.jar");
+                return new string[]
+                {
+                    ExtDir,
+                    System.Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData).Combine(@"chocolatey\lib\plantuml\tools"),
+
+                }
+                .Select(_ => _.Combine("plantuml.jar"))
+                .First(_ => _.IsFile());
             }
         }
 
-        string GraphvizDotFile
+        string? GraphvizDotFile
         {
             get
             {
@@ -109,8 +140,7 @@ namespace Amg.Plantuml
                 {
                     return settings.GraphvizDotFile;
                 }
-
-                return ExtDir.Combine(@"graphviz-2.38\release\bin\dot.exe");
+                return null;
             }
         }
 
