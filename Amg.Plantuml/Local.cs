@@ -8,6 +8,12 @@ using System.Threading.Tasks;
 using System.Linq;
 using System.Threading;
 using System.Text.RegularExpressions;
+using System.Net;
+using Amg.Util;
+using System.Runtime.CompilerServices;
+using Amg.Build;
+
+[assembly: InternalsVisibleTo("Amg.Plantuml.Tests")]
 
 namespace Amg.Plantuml
 {
@@ -112,7 +118,23 @@ namespace Amg.Plantuml
             }
         }
 
-        string PlantumlJarFile
+        public ITool Tool
+        {
+            get
+            {
+                var tool = Tools.Default.WithFileName("java.exe").WithArguments(
+                    "-jar", PlantumlJarFile);
+
+                var gvd = GraphvizDotFile;
+                if (gvd is { })
+                {
+                    tool = tool.WithArguments("-graphvizdot", GraphvizDotFile);
+                }
+                return tool;
+            }
+        }
+
+        public string PlantumlJarFile
         {
             get
             {
@@ -121,18 +143,39 @@ namespace Amg.Plantuml
                     return settings.PlantUmlJarFile;
                 }
 
-                return new string[]
+                var d = new string[]
                 {
-                    ExtDir,
+                    LibDir,
                     System.Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData).Combine(@"chocolatey\lib\plantuml\tools"),
 
                 }
-                .Select(_ => _.Combine("plantuml.jar"))
-                .First(_ => _.IsFile());
+                .Select(_ => _.Combine(PlantumlJarFileName))
+                .FirstOrDefault(_ => _.IsFile());
+
+                if (d is { })
+                {
+                    return d;
+                }
+
+                // last resort: try to download Plantuml
+                return DownloadPlantuml().Result;
             }
         }
 
-        string? GraphvizDotFile
+        string PlantumlJarFileName = "plantuml.jar";
+
+        internal async Task<string> DownloadPlantuml()
+        {
+            var plantumlJarFile = LibDir.Combine(PlantumlJarFileName);
+            if (!plantumlJarFile.IsFile())
+            {
+                var wc = new WebClient();
+                await wc.DownloadFileTaskAsync("https://netcologne.dl.sourceforge.net/project/plantuml/plantuml.jar", plantumlJarFile);
+            }
+            return plantumlJarFile;
+        }
+
+        public string? GraphvizDotFile
         {
             get
             {
@@ -140,10 +183,39 @@ namespace Amg.Plantuml
                 {
                     return settings.GraphvizDotFile;
                 }
-                return null;
+
+                var dotExe = System.Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles).Glob(@"Graphviz*\bin\dot.exe")
+                    .Concat(System.Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86).Glob(@"Graphviz*\bin\dot.exe"))
+                    .FirstOrDefault();
+
+                if (dotExe is { })
+                {
+                    return dotExe;
+                }
+
+                return DownloadGraphviz().Result;
             }
         }
 
-        string ExtDir => Assembly.GetExecutingAssembly().Location.Parent().Combine("plantuml");
+        internal async Task<string> DownloadGraphviz()
+        {
+            var graphvizName = "graphviz-2.38";
+            var graphvizDir = LibDir.Combine(graphvizName);
+            var dotExe = graphvizDir.Combine("release", "bin", "dot.exe");
+            if (!dotExe.IsFile())
+            {
+                var wc = new WebClient();
+                await wc.DownloadAndExtract("https://graphviz.gitlab.io/_pages/Download/windows/graphviz-2.38.zip", graphvizDir);
+
+                if (!dotExe.IsFile())
+                {
+                    throw new InvalidOperationException("Cannot download graphviz");
+                }
+            }
+
+            return dotExe;
+        }
+
+        string LibDir => typeof(Local).GetProgramDataDirectory().Combine("lib");
     }
 }

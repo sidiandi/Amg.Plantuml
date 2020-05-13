@@ -145,5 +145,20 @@ Alice <-- Bob: another authentication Response
                 Assert.That(results.All(_ => _));
             };
         }
+
+        [Test]
+        public async Task Download()
+        {
+            var local = new Local(new LocalSettings());
+            await local.DownloadGraphviz();
+            await local.DownloadPlantuml();
+        }
+
+        [Test]
+        public async Task Tool()
+        {
+            var local = new Local(new LocalSettings());
+            var r = await local.Tool.Run("-testdot");
+        }
     }
 }

@@ -18,11 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="lib.zip"
-          Pack="true"
-          CopyToOutputDirectory="PreserveNewest"
-          PackagePath="contentfiles\any\any\lib.zip"
-          />
+    <None Update="lib.zip" Pack="true" CopyToOutputDirectory="PreserveNewest" PackagePath="contentfiles\any\any\lib.zip" />
   </ItemGroup>
 
 </Project>
