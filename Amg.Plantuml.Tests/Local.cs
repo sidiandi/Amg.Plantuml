@@ -18,6 +18,13 @@ namespace Amg.Plantuml
         string TestDir = typeof(LocalTests).GetProgramDataDirectory();
 
         [Test]
+        public async Task Demo()
+        {
+            var plantuml = Plantuml.Local();
+            await plantuml.Convert("A --> B", "out.png");
+        }
+
+        [Test]
         public async Task Test()
         {
             var count = 10;
