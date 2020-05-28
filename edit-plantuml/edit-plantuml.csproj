@@ -17,7 +17,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Amg.Plantuml" Version="0.1.6" />
+    <ProjectReference Include="..\Amg.Plantuml\Amg.Plantuml.csproj" />
   </ItemGroup>
 
 </Project>
