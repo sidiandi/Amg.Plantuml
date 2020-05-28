@@ -7,7 +7,7 @@ using System.Windows;
 
 namespace Amg.Util
 {
-
+#nullable disable
     class DataObjectWrapper
     {
         #region NativeMethods
@@ -518,6 +518,8 @@ namespace Amg.Util
 
         #endregion
     }
+
+#nullable enable
 
     public static class DataObjectExtensions
     {

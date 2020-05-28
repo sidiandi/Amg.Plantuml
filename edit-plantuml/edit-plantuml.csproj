@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <VersionPrefix>0.1.0</VersionPrefix>
+    <LangVersion>8.0</LangVersion>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -10,11 +12,7 @@
     <UseWPF>true</UseWPF>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>edit-plantuml</ToolCommandName>
-    <PackageOutputPath>../nupkg</PackageOutputPath>
     <RootNamespace>Amg.EditPlantuml</RootNamespace>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 

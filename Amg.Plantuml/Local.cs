@@ -128,7 +128,7 @@ namespace Amg.Plantuml
                 var gvd = GraphvizDotFile;
                 if (gvd is { })
                 {
-                    tool = tool.WithArguments("-graphvizdot", GraphvizDotFile);
+                    tool = tool.WithArguments("-graphvizdot", gvd);
                 }
                 return tool;
             }

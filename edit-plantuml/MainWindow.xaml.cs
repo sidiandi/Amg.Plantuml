@@ -58,10 +58,9 @@ usecase usecase
         }
 
         Amg.Plantuml.IPlantuml plantuml;
-        Task update = null;
 
         string? previewedSource = null;
-        MemoryStream previewStream = null;
+        MemoryStream? previewStream = null;
 
         System.Threading.SemaphoreSlim updateInProgress = new System.Threading.SemaphoreSlim(1, 1);
 
@@ -99,12 +98,15 @@ usecase usecase
         async Task WriteOutputFile()
         {
             await UpdatePreview();
-
             await updateInProgress.WaitAsync();
             try
             {
                 if (outputFileName is { })
                 {
+                    if (previewStream is null)
+                    {
+                        throw new InvalidOperationException();
+                    }
                     previewStream.Seek(0, SeekOrigin.Begin);
                     using (var w = File.Open(outputFileName.EnsureParentDirectoryExists(), FileMode.Create))
                     {
@@ -169,7 +171,7 @@ usecase usecase
                     await ImportPng(m[0]);
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 MessageBox.Show("Cannot read dropped data.", "Error");
             }

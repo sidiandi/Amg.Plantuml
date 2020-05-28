@@ -128,7 +128,7 @@ end
         }
 
         [Test]
-        public async Task ParallelInput()
+        public void ParallelInput()
         {
             var plantumlMarkup = @"@startuml
 Alice -> Bob: Authentication Request
