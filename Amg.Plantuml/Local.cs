@@ -166,7 +166,7 @@ namespace Amg.Plantuml
 
         internal async Task<string> DownloadPlantuml()
         {
-            var plantumlJarFile = LibDir.Combine(PlantumlJarFileName);
+            var plantumlJarFile = LibDir.Combine(PlantumlJarFileName).EnsureParentDirectoryExists();
             if (!plantumlJarFile.IsFile())
             {
                 var wc = new WebClient();
