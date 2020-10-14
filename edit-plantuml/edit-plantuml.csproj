@@ -20,4 +20,10 @@
     <ProjectReference Include="..\Amg.Plantuml\Amg.Plantuml.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Dirkster.AvalonDock" Version="4.40.0" />
+    <PackageReference Include="estebano.ScintillaNET.WPF" Version="2.6.0" />
+    <PackageReference Include="Wpf.Controls.PanAndZoom" Version="2.3.3" />
+  </ItemGroup>
+
 </Project>

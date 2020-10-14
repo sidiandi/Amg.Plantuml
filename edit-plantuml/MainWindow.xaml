@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:PlantumlEditor"
+        xmlns:local="clr-namespace:PlantumlEditor" xmlns:panandzoom="clr-namespace:Wpf.Controls.PanAndZoom;assembly=Wpf.Controls.PanAndZoom"
         mc:Ignorable="d"
         Title="PlantUml Editor" Height="450" Width="800">
     <Grid>
@@ -19,9 +19,9 @@
                  />
         <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" />
         <Image x:Name="Preview" 
-               Grid.Column="2" 
-               Grid.Row="0"
-               Stretch="None" MouseMove="Preview_MouseMove" DragEnter="Preview_DragEnter" Drop="Preview_Drop" DragOver="Preview_DragOver"
+            Grid.Column="2" 
+            Grid.Row="0"
+               Stretch="Uniform" MouseMove="Preview_MouseMove" DragEnter="Preview_DragEnter" Drop="Preview_Drop" DragOver="Preview_DragOver"
                AllowDrop="True"
                />
     </Grid>
