@@ -19,4 +19,4 @@ build-output
 /out
 /tools
 /hagen.pluginTests/*.user
-/wix/out
+/wix/out/nupkg 
