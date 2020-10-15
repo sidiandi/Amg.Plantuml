@@ -156,7 +156,7 @@ Alice <-- Bob: another authentication Response
         [Test]
         public async Task Download()
         {
-            var local = new Local(new LocalSettings());
+            var local = Local.Create(new LocalSettings());
             await local.DownloadGraphviz();
             await local.DownloadPlantuml();
         }
@@ -164,8 +164,9 @@ Alice <-- Bob: another authentication Response
         [Test]
         public async Task Tool()
         {
-            var local = new Local(new LocalSettings());
-            var r = await local.Tool.Run("-testdot");
+            var local = Local.Create(new LocalSettings());
+            var tool = await local.GetTool();
+            var r = await tool.Run("-testdot");
         }
     }
 }

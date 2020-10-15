@@ -7,7 +7,7 @@ namespace Amg.Plantuml
 {
     public class Plantuml
     {
-        public static IPlantuml Local(LocalSettings? settings = null) => new Local(settings is null ? new LocalSettings() : settings);
+        public static IPlantuml Local(LocalSettings? settings = null) => Amg.Plantuml.Local.Create(settings is null ? new LocalSettings() : settings);
 
         public static IPlantuml Cached(IPlantuml plantuml, string? cacheDirectory = null)
         {

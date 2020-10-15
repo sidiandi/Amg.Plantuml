@@ -25,12 +25,20 @@ namespace Amg.Plantuml
     }
 
     // https://plantuml.com/de/command-line
-    public sealed class Local : IDisposable, IPlantuml
+    public class Local : IDisposable, IPlantuml
     {
-        public Local(LocalSettings settings)
+        private static readonly Serilog.ILogger Logger = Serilog.Log.Logger.ForContext(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
+        protected Local(LocalSettings settings)
         {
             this.settings = settings;
         }
+
+        Local()
+        {
+        }
+
+        public static Local Create(LocalSettings settings) => Amg.Build.Once.Create<Local>(settings);
 
         public async Task Convert(string plantumlMarkup, string outputFile)
         {
@@ -48,6 +56,8 @@ namespace Amg.Plantuml
             try
             {
                 var markup = await plantumlMarkup.ReadToEndAsync();
+                Logger.Information("Convert {0} characters", markup.Length);
+                var stopwatch = Stopwatch.StartNew();
 
                 // ensure that end marker is present
                 if (!Regex.IsMatch(markup, @"@end"))
@@ -55,9 +65,11 @@ namespace Amg.Plantuml
                     markup = markup + "\r\n@end";
                 }
 
-                var captureOutput = PlantumlProcess.StandardOutput.BaseStream.CopyUntilAsync(pipedelimitor + "\r\n", output);
-                PlantumlProcess.StandardInput.WriteLine(markup);
+                var process = await GetPlantumlProcess();
+                var captureOutput = process.StandardOutput.BaseStream.CopyUntilAsync(pipedelimitor + "\r\n", output);
+                process.StandardInput.WriteLine(markup);
                 await captureOutput;
+                Logger.Information("Convert done: {0}", stopwatch.Elapsed);
             }
             finally
             {
@@ -65,51 +77,39 @@ namespace Amg.Plantuml
             }
         }
 
-        Process PlantumlProcess
+        [Once]
+        protected virtual async Task<Process> GetPlantumlProcess()
         {
-            get
+            var plantumlJar = await GetPlantumlJarFile();
+
+            var startInfo = new ProcessStartInfo
             {
-                if (plantumlProcess is null)
+                FileName = "java.exe",
+                Arguments = new string[]
                 {
-                    if (!PlantumlJarFile.IsFile())
-                    {
-                        throw new FileNotFoundException($"plantuml.jar not found at {PlantumlJarFile}.");
-                    }
-
-                    var startInfo = new ProcessStartInfo
-                    {
-                        FileName = "java.exe",
-                        Arguments = new string[]
-                        {
-                            "-jar",
-                            PlantumlJarFile.Quote(),
-                            "-pipe", "-pipedelimitor", pipedelimitor
-                        }
-                        .Concat(settings.Options).Join(" "),
-                        RedirectStandardInput = true,
-                        RedirectStandardOutput = true,
-                        UseShellExecute = false,
-                        CreateNoWindow = true
-                    };
-
-                    if (this.GraphvizDotFile is { })
-                    {
-                        startInfo.Environment["GRAPHVIZ_DOT"] = this.GraphvizDotFile;
-                    }
-
-                    plantumlProcess = Process.Start(startInfo);
+                    "-jar",
+                    plantumlJar.Quote(),
+                    "-pipe", "-pipedelimitor", pipedelimitor
                 }
+                .Concat(settings.Options).Join(" "),
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
 
-                return plantumlProcess;
-            }
+            var dot = await GetGraphvizDotFile();
+            startInfo.Environment["GRAPHVIZ_DOT"] = dot;
+
+            return Process.Start(startInfo);
         }
 
-        Process? plantumlProcess = null;
         readonly string pipedelimitor = Guid.NewGuid().ToString();
         private readonly LocalSettings settings;
 
         public void Dispose()
         {
+            var plantumlProcess = GetPlantumlProcess().Result;
             if (plantumlProcess is { })
             {
                 plantumlProcess.StandardInput.Close();
@@ -118,86 +118,89 @@ namespace Amg.Plantuml
             }
         }
 
-        public ITool Tool
+        public async Task<ITool> GetTool()
         {
-            get
-            {
-                var tool = Tools.Default.WithFileName("java.exe").WithArguments(
-                    "-jar", PlantumlJarFile);
+            var tool = Tools.Default.WithFileName("java.exe").WithArguments(
+                "-jar", await GetPlantumlJarFile());
 
-                var gvd = GraphvizDotFile;
-                if (gvd is { })
-                {
-                    tool = tool.WithArguments("-graphvizdot", gvd);
-                }
-                return tool;
+            var gvd = await GetGraphvizDotFile();
+            if (gvd is { })
+            {
+                tool = tool.WithArguments("-graphvizdot", gvd);
             }
+            return tool;
         }
 
-        public string PlantumlJarFile
+        [Once]
+        public virtual async Task<string> GetPlantumlJarFile()
         {
-            get
+            if (settings.PlantUmlJarFile is { })
             {
-                if (settings.PlantUmlJarFile is { })
-                {
-                    return settings.PlantUmlJarFile;
-                }
+                return settings.PlantUmlJarFile;
+            }
 
-                var d = new string[]
-                {
+            var d = new string[]
+            {
                     LibDir,
                     System.Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData).Combine(@"chocolatey\lib\plantuml\tools"),
 
-                }
-                .Select(_ => _.Combine(PlantumlJarFileName))
-                .FirstOrDefault(_ => _.IsFile());
-
-                if (d is { })
-                {
-                    return d;
-                }
-
-                // last resort: try to download Plantuml
-                return DownloadPlantuml().Result;
             }
+            .Select(_ => _.Combine(PlantumlJarFileName))
+            .FirstOrDefault(_ => _.IsFile());
+
+            if (d is { })
+            {
+                return d;
+            }
+
+            // last resort: try to download Plantuml
+            return await DownloadPlantuml();
         }
 
-        string PlantumlJarFileName = "plantuml.jar";
+        string PlantumlJarFileName => "plantuml.jar";
 
+        [Once]
         internal async Task<string> DownloadPlantuml()
         {
-            var plantumlJarFile = LibDir.Combine(PlantumlJarFileName).EnsureParentDirectoryExists();
+            var plantumlJarFile = LibDir.Combine(PlantumlJarFileName);
             if (!plantumlJarFile.IsFile())
             {
                 var wc = new WebClient();
-                await wc.DownloadFileTaskAsync("https://netcologne.dl.sourceforge.net/project/plantuml/plantuml.jar", plantumlJarFile);
+                var url = "https://netcologne.dl.sourceforge.net/project/plantuml/plantuml.jar";
+                var dest = plantumlJarFile.EnsureParentDirectoryExists();
+                Logger.Information("Download {0} to {1}", url, dest);
+                await wc.DownloadFileTaskAsync(url, dest);
             }
             return plantumlJarFile;
         }
 
-        public string? GraphvizDotFile
+        static string? GetProgramFile(string pathGlob)
         {
-            get
-            {
-                if (settings.GraphvizDotFile is { })
-                {
-                    return settings.GraphvizDotFile;
-                }
-
-                var dotExe = System.Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles).Glob(@"Graphviz*\bin\dot.exe")
-                    .Concat(System.Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86).Glob(@"Graphviz*\bin\dot.exe"))
-                    .FirstOrDefault();
-
-                if (dotExe is { })
-                {
-                    return dotExe;
-                }
-
-                return DownloadGraphviz().Result;
-            }
+            return System.Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles).Glob()
+                .Concat(System.Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86).Glob(@"Graphviz*\bin\dot.exe"))
+                .FirstOrDefault();
         }
 
-        internal async Task<string> DownloadGraphviz()
+        [Once]
+        public virtual async Task<string> GetGraphvizDotFile()
+        {
+            if (settings.GraphvizDotFile is { })
+            {
+                return settings.GraphvizDotFile;
+            }
+
+            var dotExe = GetProgramFile(@"Graphviz*\bin\dot.exe");
+
+            if (dotExe is { })
+            {
+                return dotExe;
+            }
+
+            return await DownloadGraphviz();
+        }
+
+        [Once]
+        internal virtual async Task<string> DownloadGraphviz()
         {
             var graphvizName = "graphviz-2.38";
             var graphvizDir = LibDir.Combine(graphvizName);

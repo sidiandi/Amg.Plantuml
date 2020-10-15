@@ -23,6 +23,8 @@
   <ItemGroup>
     <PackageReference Include="Dirkster.AvalonDock" Version="4.40.0" />
     <PackageReference Include="estebano.ScintillaNET.WPF" Version="2.6.0" />
+    <PackageReference Include="Serilog" Version="2.10.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
     <PackageReference Include="Wpf.Controls.PanAndZoom" Version="2.3.3" />
   </ItemGroup>
 
