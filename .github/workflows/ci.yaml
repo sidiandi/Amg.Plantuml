@@ -15,7 +15,7 @@ jobs:
     name: Update NuGet package
     steps:
       - name DumpApiKey
-        run: echo ${{ secrets.NUGETAPIKEY }}
+        run: echo hello
 
       - name: Checkout repository
         uses: actions/checkout@v1
