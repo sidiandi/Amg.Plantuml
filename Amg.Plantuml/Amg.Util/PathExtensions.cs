@@ -28,5 +28,10 @@ namespace Amg.Util
             .ToArray())
             .EnsureDirectoryExists();
         }
+
+        public static string GetTempDirectory()
+        {
+            return System.IO.Path.GetTempPath().Combine(System.IO.Path.GetRandomFileName());
+        }
     }
 }

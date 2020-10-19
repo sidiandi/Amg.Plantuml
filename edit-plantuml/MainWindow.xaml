@@ -4,25 +4,39 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PlantumlEditor" xmlns:panandzoom="clr-namespace:Wpf.Controls.PanAndZoom;assembly=Wpf.Controls.PanAndZoom"
+        xmlns:ae="http://icsharpcode.net/sharpdevelop/avalonedit"
         mc:Ignorable="d"
-        Title="PlantUml Editor" Height="450" Width="800">
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition/>
-            <ColumnDefinition Width="5" />
-            <ColumnDefinition/>
-        </Grid.ColumnDefinitions>
-        <TextBox x:Name="Source" Grid.Column="0" Grid.Row="0" TextChanged="Source_TextChanged"
-                 TextWrapping="Wrap" AcceptsReturn="True"
-                 FontFamily="Courier New"
-                 AcceptsTab="False" 
-                 />
-        <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" />
-        <Image x:Name="Preview" 
-            Grid.Column="2" 
-            Grid.Row="0"
-               Stretch="Uniform" MouseMove="Preview_MouseMove" DragEnter="Preview_DragEnter" Drop="Preview_Drop" DragOver="Preview_DragOver"
+        Title="edit-plantuml"
+        Height="600" Width="800"
+        Loaded="Window_Loaded"
+        Closed="Window_Closed"
+        >
+    <DockPanel>
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="_File">
+                <MenuItem Header="_New" Click="New"/>
+                <MenuItem Header="_Open" />
+                <MenuItem Header="_Save" />
+                <Separator />
+                <MenuItem Header="_Exit" />
+            </MenuItem>
+        </Menu>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+            <ae:TextEditor x:Name="Source" />
+            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" />
+            <Image x:Name="Preview" 
+                Grid.Column="2" 
+                Grid.Row="0"
+               Stretch="Uniform" 
+               StretchDirection="DownOnly"
+               MouseMove="Preview_MouseMove" DragEnter="Preview_DragEnter" Drop="Preview_Drop" DragOver="Preview_DragOver"
                AllowDrop="True"
                />
-    </Grid>
+        </Grid>
+    </DockPanel>
 </Window>

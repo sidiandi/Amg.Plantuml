@@ -9,6 +9,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Amg.Plantuml.Tests", "Amg.P
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "edit-plantuml", "edit-plantuml\edit-plantuml.csproj", "{8774E1AE-5725-4082-A631-7160FA2F9ED9}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{FE8D38B6-5AF4-4CC0-B114-78AD2F855289}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+		todo.md = todo.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

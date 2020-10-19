@@ -40,3 +40,4 @@ Code:
 	var plantuml = Amg.Plantuml.Plantuml.Local();
 	await plantuml.Convert("A --> B", "out.png");
 ~~~~
+
