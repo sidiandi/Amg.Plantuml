@@ -7,6 +7,7 @@
 
 # Done
 
+* nice default document
 * multiple windows
 * fix auto completion
 * text editor has focus on startup
