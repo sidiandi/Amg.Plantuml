@@ -170,6 +170,33 @@ namespace Amg.EditPlantuml
             }
         }
 
+        // https://plantuml.com/de/openiconic
+        class OpenIconicCompletion: ICompletionData
+        {
+            private readonly string name;
+
+            public OpenIconicCompletion(string name)
+            {
+                this.name = name;
+            }
+
+            public ImageSource Image => null;
+
+            public string Text => $"{name} (open iconic)";
+
+            public object Content => Text;
+
+            public object Description => null;
+
+            public double Priority => 0.0;
+
+            public void Complete(TextArea textArea, ISegment completionSegment, EventArgs insertionRequestEventArgs)
+            {
+                var wordSegment = GetWordSegment(textArea.Document, completionSegment.EndOffset);
+                textArea.Document.Replace(wordSegment, $"rectangle \"<size:20><&{name}> {name}\" as {name.Replace("-", "_")}");
+            }
+        }
+
         static void InsertInclude(TextDocument document, string include)
         {
             var includes = GetIncludeSection(document);
@@ -241,10 +268,13 @@ namespace Amg.EditPlantuml
         {
             var candidates = Enumerable.Empty<ICompletionData>();
 
+            candidates = candidates.Concat(openIconic);
+
             if (sprites.IsCompleted)
             {
                 candidates = candidates.Concat(sprites.Result);
             }
+
 
             StartCompletion(candidates);
         }
@@ -315,5 +345,7 @@ namespace Amg.EditPlantuml
 
         CompletionWindow? window = null;
         readonly Task<IEnumerable<ICompletionData>> sprites;
+
+        readonly IEnumerable<ICompletionData> openIconic = SpriteReader.OpenIconicNames().Select(_ => new OpenIconicCompletion(_)).ToList();
     }
 }
