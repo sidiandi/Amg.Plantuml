@@ -5,6 +5,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Security.Policy;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -56,38 +57,74 @@ namespace Amg.EditPlantuml
 
         Amg.Plantuml.IPlantuml plantuml;
 
-        string? previewedSource = null;
-        MemoryStream? previewStream = null;
-
         System.Threading.SemaphoreSlim updateInProgress = new System.Threading.SemaphoreSlim(1, 1);
+
+        async Task<PreviewData> Convert(string source)
+        {
+            var stream = new MemoryStream();
+
+            await plantuml.Convert(new StringReader(source), stream);
+            stream.Seek(0, SeekOrigin.Begin);
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.StreamSource = stream;
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.EndInit();
+            bitmap.Freeze();
+
+            return new PreviewData
+            {
+                Source = source,
+                Bitmap = bitmap,
+                Png = stream
+            };
+        }
+
+        class PreviewData
+        {
+            public string Source { get; set; }
+            public BitmapImage Bitmap { get; set; }
+            public Stream Png;
+        }
+
+        async Task<IList<PreviewData>> GetPreviews(string source, IEnumerable<PreviewData> existingPreviews)
+        {
+            var plantumlSections = Amg.Plantuml.Plantuml.GetSections(source);
+            return await plantumlSections.SelectAsync(async source =>
+            {
+                var preview = existingPreviews.FirstOrDefault(_ => _.Source.Equals(source));
+                if (preview is null)
+                {
+                    preview = await Convert(source);
+                }
+                return preview;
+            });
+        }
 
         async Task UpdatePreview()
         {
             await updateInProgress.WaitAsync();
-
             var source = Text;
-            if (previewedSource is null || !previewedSource.Equals(source))
+            var previews = await GetPreviews(source, Preview.Items.Cast<System.Windows.Controls.Image>().Select(_ => _.Tag).Cast<PreviewData>().Where(_ => _ is { }));
+
+            Preview.Items.Clear();
+            foreach (var i in previews)
             {
-                previewStream = new MemoryStream();
-                var stream = previewStream;
-
-                await plantuml.Convert(new StringReader(source), stream);
-                stream.Seek(0, SeekOrigin.Begin);
-                var bitmap = new BitmapImage();
-                bitmap.BeginInit();
-                bitmap.StreamSource = stream;
-                bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.EndInit();
-                bitmap.Freeze();
-                this.Preview.Source = bitmap;
+                var image = new System.Windows.Controls.Image
+                {
+                    Source = i.Bitmap,
+                    Tag = i,
+                    Stretch = Stretch.Uniform,
+                    StretchDirection = StretchDirection.DownOnly,
+                };
+                image.MouseMove += Preview_MouseMove;
+                Preview.Items.Add(image);
             }
-
-            previewedSource = source;
 
             updateInProgress.Release();
         }
 
-        async Task<string> WriteOutputFile()
+        async Task<string> WriteOutputFile(PreviewData previewData)
         {
             await UpdatePreview();
             await updateInProgress.WaitAsync();
@@ -95,10 +132,7 @@ namespace Amg.EditPlantuml
             {
                 var filename = Util.Filename(DateTime.UtcNow, PlantumlTitle ?? "export");
                 var outputFile = DocDir.Combine(filename + pngExtension);
-                if (previewStream is null)
-                {
-                    throw new InvalidOperationException();
-                }
+                var previewStream = previewData.Png;
                 previewStream.Seek(0, SeekOrigin.Begin);
                 using (var w = File.Open(outputFile.EnsureParentDirectoryExists(), FileMode.Create))
                 {
@@ -118,12 +152,16 @@ namespace Amg.EditPlantuml
             {
                 var data = new DataObject();
                 var files = new StringCollection();
-                var outputFile = await WriteOutputFile();
-                files.Add(outputFile);
-                data.SetFileDropList(files);
-                DragDrop.DoDragDrop(this.Preview,
-                    data,
-                    DragDropEffects.Copy);
+                var previewData = (sender as System.Windows.Controls.Image)?.Tag as PreviewData;
+                if (previewData is { })
+                {
+                    var outputFile = await WriteOutputFile(previewData);
+                    files.Add(outputFile);
+                    data.SetFileDropList(files);
+                    DragDrop.DoDragDrop(this.Preview,
+                        data,
+                        DragDropEffects.Copy);
+                }
             }
         }
 
@@ -150,7 +188,7 @@ namespace Amg.EditPlantuml
             var r = await plantuml.DoNotCheckExitCode().Run("-metadata", pngFile);
             if (r.ExitCode == 0)
             {
-                this.Text = r.Output;
+                this.Source.Document.Append(r.Output);
             }
         }
 
@@ -224,7 +262,9 @@ rectangle rectangle
 storage storage
 usecase usecase
 
-@enduml";
+@enduml
+
+";
             var s = Source.Document.Find(dateTitle);
             Source.SelectionStart = s.Offset;
             Source.SelectionLength = s.Length;

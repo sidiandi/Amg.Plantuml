@@ -7,6 +7,7 @@
 
 # Done
 
+* multiple PlantUml diagrams in one source window
 * nice default document
 * multiple windows
 * fix auto completion
