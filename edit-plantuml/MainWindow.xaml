@@ -20,6 +20,9 @@
                 <Separator />
                 <MenuItem Header="_Exit" />
             </MenuItem>
+            <MenuItem Header="_Edit">
+                <MenuItem Header="_Paste Image" Click="PasteImage"/>
+            </MenuItem>
         </Menu>
         <Grid>
             <Grid.ColumnDefinitions>

@@ -36,6 +36,8 @@ namespace Amg.EditPlantuml
     /// </summary>
     public partial class MainWindow : Window
     {
+        private static readonly Serilog.ILogger Logger = Serilog.Log.Logger.ForContext(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
         public string Text
         {
             get
@@ -52,10 +54,12 @@ namespace Amg.EditPlantuml
         public MainWindow()
         {
             plantuml = Amg.Plantuml.Plantuml.Local();
+            svgConverter = Amg.Plantuml.Plantuml.Local(new LocalSettings { Options = new[] { "-tsvg" } });
             InitializeComponent();
         }
 
         Amg.Plantuml.IPlantuml plantuml;
+        Amg.Plantuml.IPlantuml svgConverter;
 
         System.Threading.SemaphoreSlim updateInProgress = new System.Threading.SemaphoreSlim(1, 1);
 
@@ -118,51 +122,77 @@ namespace Amg.EditPlantuml
                     StretchDirection = StretchDirection.DownOnly,
                 };
                 image.MouseMove += Preview_MouseMove;
+                image.MouseDown += Image_MouseDown;
                 Preview.Items.Add(image);
             }
 
             updateInProgress.Release();
         }
 
-        async Task<string> WriteOutputFile(PreviewData previewData)
+        private void Image_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            await UpdatePreview();
-            await updateInProgress.WaitAsync();
-            try
-            {
-                var filename = Util.Filename(DateTime.UtcNow, PlantumlTitle ?? "export");
-                var outputFile = DocDir.Combine(filename + pngExtension);
-                var previewStream = previewData.Png;
-                previewStream.Seek(0, SeekOrigin.Begin);
-                using (var w = File.Open(outputFile.EnsureParentDirectoryExists(), FileMode.Create))
-                {
-                    await previewStream.CopyToAsync(w);
-                }
-                return outputFile;
-            }
-            finally
-            {
-                updateInProgress.Release();
-            }
+            dragging = false;
         }
+
+        async Task<string> WriteOutputFile(PreviewData previewData, string type = "png")
+        {
+            var filename = Util.Filename(DateTime.UtcNow, PlantumlTitle ?? "export");
+            var outputFile = DocDir.Combine(filename + "." + type);
+
+            var plantuml = type == "svg"
+                ? this.svgConverter
+                : this.plantuml;
+
+            await plantuml.Convert(previewData.Source, outputFile.EnsureParentDirectoryExists());
+            return outputFile;
+        }
+
+        static PreviewData? GetPreviewData(object sender) => (sender as System.Windows.Controls.Image)?.Tag as PreviewData;
 
         private async void Preview_MouseMove(object sender, MouseEventArgs e)
         {
-            if (e.LeftButton == MouseButtonState.Pressed)
+            if (!dragging && e.LeftButton == MouseButtonState.Pressed)
             {
                 var data = new DataObject();
                 var files = new StringCollection();
-                var previewData = (sender as System.Windows.Controls.Image)?.Tag as PreviewData;
+                var previewData = GetPreviewData(sender);
                 if (previewData is { })
                 {
-                    var outputFile = await WriteOutputFile(previewData);
-                    files.Add(outputFile);
-                    data.SetFileDropList(files);
-                    DragDrop.DoDragDrop(this.Preview,
-                        data,
-                        DragDropEffects.Copy);
+                    if (ExportFile)
+                    {
+                        var outputFile = await WriteOutputFile(previewData, "png");
+                        files.Add(outputFile);
+                        data.SetFileDropList(files);
+                    }
+
+                    if (ExportSvg)
+                    {
+                        data.SetData("image/svg+xml", await ToMemoryStream(svgConverter, previewData.Source));
+                    }
+
+                    DragDrop.DoDragDrop(this.Preview, data, DragDropEffects.Copy);
+                    dragging = true;
                 }
             }
+        }
+
+        bool dragging = false;
+
+        bool ExportSvg = false;
+        bool ExportFile = true;
+
+        async Task<byte[]> ToBytes(IPlantuml plantuml, string source)
+        {
+            var s = await ToMemoryStream(plantuml, source);
+            s.Seek(0, SeekOrigin.Begin);
+            return await s.ReadToEndAsync();
+        }
+
+        async Task<MemoryStream> ToMemoryStream(IPlantuml plantuml, string source)
+        {
+            var s = new MemoryStream();
+            await plantuml.Convert(new StringReader(source), s);
+            return s;
         }
 
         private void Preview_DragEnter(object sender, DragEventArgs e)
@@ -293,12 +323,28 @@ usecase usecase
         private void Window_Closed(object sender, EventArgs e)
         {
             codeCompletion.Dispose();
+            plantuml.Dispose();
+            svgConverter.Dispose();
         }
 
         private void New(object sender, RoutedEventArgs e)
         {
             var newWindow = new MainWindow();
             newWindow.Show();
+        }
+
+        private async void PasteImage(object sender, RoutedEventArgs e)
+        {
+            var data = Clipboard.GetDataObject();
+            Logger.Information("{0}", data.GetFormats().Join());
+            var png = Clipboard.GetData("PNG") as Stream;
+            if (png is { })
+            {
+                using (png)
+                {
+                    await ImportPng(png);
+                }
+            }
         }
     }
 }
