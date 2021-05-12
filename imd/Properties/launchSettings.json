@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "imd": {
+      "commandName": "Project",
+      "commandLineArgs": "compile C:\\src\\Amg.Plantuml\\imd\\examples\\posh.i.md -v detailed "
+    }
+  }
+}

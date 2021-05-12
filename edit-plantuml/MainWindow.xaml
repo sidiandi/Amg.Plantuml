@@ -15,7 +15,7 @@
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
                 <MenuItem Header="_New" Click="New"/>
-                <MenuItem Header="_Open" />
+                <MenuItem Header="_Open" Click="Open"/>
                 <MenuItem Header="_Save" />
                 <Separator />
                 <MenuItem Header="_Exit" />
@@ -26,17 +26,18 @@
         </Menu>
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition/>
+                <ColumnDefinition Width="8*"/>
+                <ColumnDefinition Width="191*"/>
                 <ColumnDefinition Width="5" />
-                <ColumnDefinition/>
+                <ColumnDefinition Width="199*"/>
             </Grid.ColumnDefinitions>
-            <ae:TextEditor x:Name="Source" />
-            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" />
+            <ae:TextEditor x:Name="Source" Grid.ColumnSpan="3" Margin="0,0,4,0" />
+            <GridSplitter Grid.Column="2" Width="5" HorizontalAlignment="Stretch" />
             <ScrollViewer VerticalScrollBarVisibility="Auto" Grid.Column="2" Grid.Row="0" 
                 AllowDrop="True"
                 Drop="Preview_Drop" 
                 DragEnter="Preview_DragEnter" 
-                DragOver="Preview_DragOver"
+                DragOver="Preview_DragOver" Grid.ColumnSpan="2" Margin="4,0,0,0"
                 >
                 <ItemsControl x:Name="Preview">
                     <Image />

@@ -346,5 +346,19 @@ usecase usecase
                 }
             }
         }
+
+        private async void Open(object sender, RoutedEventArgs e)
+        {
+            var fd = new OpenFileDialog();
+            fd.Filter = "Image files (*.png, *.svg)|*.png;*.svg|Source files (*.puml, *.md)|*.puml;*.md";
+            var result = fd.ShowDialog();
+            if (result.HasValue && result.Value)
+            {
+                using (var r = File.OpenRead(fd.FileName))
+                {
+                    await ImportPng(r);
+                }
+            }
+        }
     }
 }
