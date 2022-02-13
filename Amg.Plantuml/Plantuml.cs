@@ -11,6 +11,8 @@ namespace Amg.Plantuml
     {
         public static IPlantuml Local(LocalSettings? settings = null) => Amg.Plantuml.Local.Create(settings is null ? new LocalSettings() : settings);
 
+        public static IPlantuml LocalWebServer(LocalWebServerOptions? options = null) => Amg.Plantuml.LocalWebServer.Create(options is null ? new LocalWebServerOptions() : options);
+
         public static IPlantuml Cached(IPlantuml plantuml, string? cacheDirectory = null)
         {
             return new Cache(plantuml, cacheDirectory);

@@ -139,20 +139,6 @@ namespace Amg.Plantuml
                 return settings.PlantUmlJarFile;
             }
 
-            var d = new string[]
-            {
-                    LibDir,
-                    System.Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData).Combine(@"chocolatey\lib\plantuml\tools"),
-
-            }
-            .Select(_ => _.Combine(PlantumlJarFileName))
-            .FirstOrDefault(_ => _.IsFile());
-
-            if (d is { })
-            {
-                return d;
-            }
-
             // last resort: try to download Plantuml
             return await DownloadPlantuml();
         }

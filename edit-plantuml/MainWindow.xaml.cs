@@ -53,8 +53,8 @@ namespace Amg.EditPlantuml
 
         public MainWindow()
         {
-            plantuml = Amg.Plantuml.Plantuml.Local();
-            svgConverter = Amg.Plantuml.Plantuml.Local(new LocalSettings { Options = new[] { "-tsvg" } });
+            plantuml = Amg.Plantuml.Plantuml.LocalWebServer();
+            svgConverter = plantuml;
             InitializeComponent();
         }
 
@@ -65,23 +65,35 @@ namespace Amg.EditPlantuml
 
         async Task<PreviewData> Convert(string source)
         {
-            var stream = new MemoryStream();
-
-            await plantuml.Convert(new StringReader(source), stream);
-            stream.Seek(0, SeekOrigin.Begin);
-            var bitmap = new BitmapImage();
-            bitmap.BeginInit();
-            bitmap.StreamSource = stream;
-            bitmap.CacheOption = BitmapCacheOption.OnLoad;
-            bitmap.EndInit();
-            bitmap.Freeze();
-
-            return new PreviewData
+            try
             {
-                Source = source,
-                Bitmap = bitmap,
-                Png = stream
-            };
+                var stream = new MemoryStream();
+
+                await plantuml.Convert(new StringReader(source), stream);
+                stream.Seek(0, SeekOrigin.Begin);
+                var bitmap = new BitmapImage();
+                bitmap.BeginInit();
+                bitmap.StreamSource = stream;
+                bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                bitmap.EndInit();
+                bitmap.Freeze();
+
+                return new PreviewData
+                {
+                    Source = source,
+                    Bitmap = bitmap,
+                    Png = stream
+                };
+            }
+            catch (Exception ex)
+            {
+                return new PreviewData
+                {
+                    Source = source,
+                    Bitmap = null,
+                    Png = null
+                };
+            }
         }
 
         class PreviewData
